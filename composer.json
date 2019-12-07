@@ -10,6 +10,7 @@
     ],
     "require": {
         "php": ">=7.0",
+        "php-di/invoker": "~2.0",
         "pimple/pimple": "~3.0"
     },
     "autoload": {
