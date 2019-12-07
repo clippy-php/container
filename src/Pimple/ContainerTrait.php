@@ -39,12 +39,12 @@ use Pimple\Exception\UnknownIdentifierException;
  */
 trait ContainerTrait
 {
-    private $values = array();
-    private $factories;
-    private $protected;
-    private $frozen = array();
-    private $raw = array();
-    private $keys = array();
+    protected $values = array();
+    protected $factories;
+    protected $protected;
+    protected $frozen = array();
+    protected $raw = array();
+    protected $keys = array();
 
     /**
      * Instantiates the container.
@@ -113,11 +113,11 @@ trait ContainerTrait
 
         $valuesAtId = $this->values[$id];
         if (isset($this->factories[$valuesAtId])) {
-            return $this->values[$id]($this);
+            return $this->call($this->values[$id]);
         }
 
         $raw = $this->values[$id];
-        $val = $this->values[$id] = $raw($this);
+        $val = $this->values[$id] = $this->call($raw);
         $this->raw[$id] = $raw;
 
         $this->frozen[$id] = true;
@@ -151,6 +151,19 @@ trait ContainerTrait
 
             unset($this->values[$id], $this->frozen[$id], $this->raw[$id], $this->keys[$id]);
         }
+    }
+
+    /**
+     * @param callable $callable
+     * @param array|NULL $parameters
+     * @return mixed
+     */
+    public function call($callable, $parameters = NULL) {
+        if (!\method_exists($callable, '__invoke')) {
+            throw new ExpectedInvokableException('Callable is not a Closure or invokable object.');
+        }
+
+        return $callable($parameters, $parameters ? array_merge([$this], $parameters) : [$this]);
     }
 
     /**
