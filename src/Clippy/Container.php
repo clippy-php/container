@@ -7,9 +7,16 @@ use Invoker\ParameterResolver\Container\ParameterNameContainerResolver;
 use Invoker\ParameterResolver\DefaultValueResolver;
 use Invoker\ParameterResolver\NumericArrayResolver;
 use Invoker\ParameterResolver\ResolverChain;
+use Pimple\Exception\ExpectedInvokableException;
+use Pimple\ContainerTrait;
 use Psr\Container\ContainerInterface;
 
 class Container implements ContainerInterface, \ArrayAccess {
+
+  use ContainerTrait {
+    offsetSet as pimpleOffsetSet;
+    __construct as pimpleConstruct;
+  }
 
   /**
    * @var \Invoker\Invoker
@@ -17,15 +24,9 @@ class Container implements ContainerInterface, \ArrayAccess {
   private $invoker = NULL;
 
   /**
-   * @var \Pimple\Container
-   */
-  private $pimple;
-
-  /**
    * ClippyContainer constructor.
    */
-  public function __construct() {
-    $this->pimple = new \Pimple\Container();
+  public function __construct(array $values = []) {
     $parameterResolver = new ResolverChain(array(
       new NumericArrayResolver(),
       new ParameterNameContainerResolver($this),
@@ -33,83 +34,84 @@ class Container implements ContainerInterface, \ArrayAccess {
       new DefaultValueResolver(),
     ));
     $this->invoker = new Invoker($parameterResolver, $this);
-  }
-
-  public function offsetExists($id) {
-    return $this->pimple->offsetExists($id);
-  }
-
-  public function offsetGet($id) {
-    return $this->pimple->offsetGet($id);
+    $this->pimpleConstruct($values);
   }
 
   public function offsetSet($id, $value) {
     $len = strlen($id);
 
-    if ($value instanceof \Closure) {
-      if ($id[$len-2] === '(' && $id[$len-1] === ')' ) {
-        // Partial service definitions - these where some params are given at call-time.
-        $id = substr($id, 0, $len-2);
-        $value = function () use ($value) {
-          return $this->inject(1, $value);
-        };
+    if ($len > 2 && $value instanceof \Closure) {
+      // Interpret sigils
+      // 'foo()' -> service method
+      // 'foo++' -> service factory
+      if ($id[$len - 2] === '(' && $id[$len - 1] === ')') {
+        $id = substr($id, 0, $len - 2);
+        $value = $this->method($value);
       }
-      else {
-        $value = $this->inject(0, $value);
+      elseif ($id[$len - 2] === '+' && $id[$len - 1] === '+') {
+        // Partial service definitions - these where some params are given at call-time.
+        $id = substr($id, 0, $len - 2);
+        $value = $this->factory($value);
       }
     }
 
-    $this->pimple->offsetSet($id, $value);
+    $this->pimpleOffsetSet($id, $value);
   }
 
-  public function offsetUnset($id) {
-    $this->pimple->offsetUnset($id);
-  }
+  // Parameter injection support
 
-  // Support for methods
-
-  public function getInvoker() {
-    return $this->invoker;
-  }
-
+  /**
+   * Invoke a callable, passing a mix of parameters based on
+   * $parameters and the contents of the container.
+   *
+   * @param callable $callable
+   * @param array $parameters
+   * @return mixed
+   */
   public function call($callable, array $parameters = array()) {
     return $this->invoker->call($callable, $parameters);
   }
 
+  // Service methods
+
   /**
-   * Wrap a function, augmenting its inputs with values from the container.
+   * Defines a service which is actually callable method, whose parameters
+   * are based on a mix of runtime inputs and service ids.
    *
-   * $f = $container->inject(0, function($msg, Some $svcA){ ... });
-   * $f("Hello");
-   *
-   * @param bool|int $passthru
-   *   Whether the original arguments should be passed along to $callable.
    * @param callable $callable
-   * @return \Closure
+   * @return callable
    */
-  public function inject($passthru, $callable) {
-    $c = $this;
-    return function () use ($passthru, $callable, $c) {
-      $args = $passthru ? func_get_args() : [];
-      return $c->invoker->call($callable->bindTo($c), $args);
-    };
+  public function method($callable) {
+    if (!\method_exists($callable, '__invoke')) {
+      throw new ExpectedInvokableException('Callable is not a Closure or invokable object.');
+    }
+    return $this->protect(function () use ($callable) {
+      return $this->invoker->call($callable, func_get_args());
+    });
   }
 
-  // PSR-11
-
-  public function get($id) {
-    return $this->pimple[$id];
-  }
-
-  public function has($id) {
-    return isset($this->pimple[$id]);
-  }
-
-  // Sugar
+  // PSR-11 (++)
 
   /**
-   * Register a service value or factory function.
+   * @param string $id
+   * @return mixed
    *
+   * @see ContainerInterface::get()
+   */
+  public function get($id) {
+    return $this->offsetGet($id);
+  }
+
+  /**
+   * @param string $id
+   * @return bool
+   * @see ContainerInterface::get()
+   */
+  public function has($id) {
+    return $this->offsetExists($id);
+  }
+
+  /**
    * @param string $id
    * @param mixed $value
    * @return $this
@@ -129,30 +131,10 @@ class Container implements ContainerInterface, \ArrayAccess {
    */
   public function env($id, $value = NULL) {
     $this->offsetSet("_env_{$id}", $value);
-    $this->pimple[$id] = function () use ($id) {
+    $this->offsetSet($id, function () use ($id) {
       return getenv($id) ? getenv($id) : $this->pimple["_env_{$id}"];
-    };
+    });
     return $this;
-  }
-
-  /**
-   * @param string $id
-   * @param callable $callable
-   * @return $this
-   * @see \Pimple\Container::extend()
-   */
-  public function extend($id, $callable) {
-    $this->pimple->extend($id, $this->inject(0, $callable));
-    return $this;
-  }
-
-  /**
-   * @param callable $callable
-   * @return callable
-   * @see \Pimple\Container::factory()
-   */
-  public function factory($callable) {
-    return $this->pimple->factory($this->inject(0, $callable));
   }
 
   //public function command($sig, $callback) {
