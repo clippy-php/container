@@ -121,21 +121,21 @@ class Container implements ContainerInterface, \ArrayAccess {
     return $this;
   }
 
-  /**
-   * Register an environment variable.
-   *
-   * @param string $id
-   * @param mixed $value
-   *   The default value or factory function
-   * @return $this
-   */
-  public function env($id, $value = NULL) {
-    $this->offsetSet("_env_{$id}", $value);
-    $this->offsetSet($id, function () use ($id) {
-      return getenv($id) ? getenv($id) : $this->pimple["_env_{$id}"];
-    });
-    return $this;
-  }
+  ///**
+  // * Register an environment variable.
+  // *
+  // * @param string $id
+  // * @param mixed $value
+  // *   The default value or factory function
+  // * @return $this
+  // */
+  //public function env($id, $value = NULL) {
+  //  $this->offsetSet("_env_{$id}", $value);
+  //  $this->offsetSet($id, function () use ($id) {
+  //    return getenv($id) ? getenv($id) : $this->pimple["_env_{$id}"];
+  //  });
+  //  return $this;
+  //}
 
   //public function command($sig, $callback) {
   //  return $this->pimple['app']->command($sig, $callback);
