@@ -43,10 +43,10 @@ The service-method is denoted by including `()` in the declaration. Compare:
 
 ```php
 // Standard service
-`$c['foo']` = function($injectedService, ...) { ... }
+$c['foo'] = function($injectedService, ...) { ... }
 
 // Service method
-`$c['foo()']` = function($inputtedData, ... , $injectedService, ...)  { ... }
+$c['foo()'] = function($inputtedData, ... , $injectedService, ...)  { ... }
 };
 ```
 
@@ -56,15 +56,16 @@ In standard Pimple, you may define alternative handling for a callback by using 
 wrappers as well as a sigil notation.
 
 ```php
+// Run a function every time one reads `$c['theJoneses]`, with mix of inputs and services
+$c['getPassword'] = $c->method(function ($domain, SymfonyStyle $io) { ... });
+$c['getPassword()'] = function ($domain, SymfonyStyle $io) { ... };
+$c['getPassword']('localhost');
+$c['getPassword']('example.com');
+
 // Create a new instance every time one reads `$c['theJonses']`:
 $c['theJoneses'] = $c->factory(function() { return new CoolThing(microtime(1)); });
 $c['theJoneses++'] = function() { return new CoolThing(microtime(1)); };
 print_r($c['theJoneses']);
 print_r($c['theJoneses']);
 
-// Run a function every time one reads `$c['theJoneses]`, with mix of inputs and services
-$c['getPassword'] = $c->method(function ($domain, SymfonyStyle $io) { ... });
-$c['getPassword()'] = function ($domain, SymfonyStyle $io) { ... };
-$c['getPassword']('localhost');
-$c['getPassword']('example.com');
 ```
