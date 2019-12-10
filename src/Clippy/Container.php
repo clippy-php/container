@@ -15,6 +15,7 @@ class Container implements ContainerInterface, \ArrayAccess {
 
   use ContainerTrait {
     offsetSet as pimpleOffsetSet;
+    offsetGet as pimpleOffsetGet;
     __construct as pimpleConstruct;
   }
 
@@ -35,6 +36,10 @@ class Container implements ContainerInterface, \ArrayAccess {
     ));
     $this->invoker = new Invoker($parameterResolver, $this);
     $this->pimpleConstruct($values);
+  }
+
+  public function offsetGet($id) {
+    return $this->pimpleOffsetGet(rtrim($id, '()+<>'));
   }
 
   public function offsetSet($id, $value) {

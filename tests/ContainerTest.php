@@ -83,6 +83,7 @@ class ContainerTest extends TestCase {
     $this->assertEquals('world_0', $c['bar']->name);
     $this->assertEquals('world_1', $c['bar']->name);
     $this->assertEquals('world_2', $c['bar']->name);
+    $this->assertEquals('world_3', $c['bar++']->name);
   }
 
   public function testServiceMethod() {
@@ -121,7 +122,7 @@ class ContainerTest extends TestCase {
     };
 
     $this->assertEquals('world', $c['doIt'](1));
-    $this->assertEquals('worldworldworld', $c['doIt'](3));
+    $this->assertEquals('worldworldworld', $c['doIt()'](3));
     $this->assertEquals('worldworld', $c['doIt'](2));
   }
 
