@@ -98,7 +98,7 @@ class Container implements ContainerInterface, \ArrayAccess {
   /**
    * Defines a service using an anonymous, autowired object.
    *
-   * $c['service'] = $c->autowired(new class() {
+   * $c['service'] = $c->autowiredObject(new class() {
    *   protected $injectedService;
    *   public function doStuff() { $this->injectedService->frobnicate(); }
    * });
@@ -108,14 +108,14 @@ class Container implements ContainerInterface, \ArrayAccess {
    *   however, services won't be injected until someone requests a copy.
    * - Any properties (which do NOT begin with '_') will be injected.
    *
-   * @param mixed $anonObj
+   * @param mixed $obj
    * @return \Closure
    */
-  public function autowiredObject($anonObj) {
+  public function autowiredObject($obj) {
     $c = $this;
-    return function() use ($c, $anonObj) {
-      $instance = clone $anonObj;
-      $className = get_class($anonObj);
+    return function() use ($c, $obj) {
+      $instance = clone $obj;
+      $className = get_class($obj);
       $populate = function() use ($c, $className) {
         $clazz = new \ReflectionClass($className);
         foreach ($clazz->getProperties() as $prop) {
