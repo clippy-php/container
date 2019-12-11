@@ -1,7 +1,6 @@
 <?php
 namespace Clippy;
 
-use Clippy\Container;
 use PHPUnit\Framework\TestCase;
 
 class ContainerTest extends TestCase {
@@ -124,6 +123,22 @@ class ContainerTest extends TestCase {
     $this->assertEquals('world', $c['doIt'](1));
     $this->assertEquals('worldworldworld', $c['doIt()'](3));
     $this->assertEquals('worldworld', $c['doIt'](2));
+  }
+
+  public function testAutowiredAnonymousClass() {
+    $c = new Container();
+    $c['newService'] = $c->autowiredObject(new class() {
+
+      protected $basicService;
+
+      public function double() {
+        return $this->basicService . $this->basicService;
+      }
+
+    });
+
+    $c['basicService'] = 'something';
+    $this->assertEquals('somethingsomething', $c['newService']->double());
   }
 
 }
