@@ -1,5 +1,5 @@
 <?php
-namespace Pogo;
+namespace Clippy;
 
 use Clippy\Container;
 use PHPUnit\Framework\TestCase;
