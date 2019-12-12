@@ -2,6 +2,7 @@
 namespace Clippy;
 
 use PHPUnit\Framework\TestCase;
+use Pimple\Exception\UnknownIdentifierException;
 
 class ContainerTest extends TestCase {
 
@@ -125,11 +126,16 @@ class ContainerTest extends TestCase {
     $this->assertEquals('worldworld', $c['doIt'](2));
   }
 
-  public function testAutowiredAnonymousClass() {
+  /**
+   * @expectException
+   */
+  public function testAutowiredAnonymousClassRelaxed() {
     $c = new Container();
-    $c['newService'] = $c->autowiredObject(new class() {
+    $c['newService'] = $c->autowiredObject(['strict' => FALSE], new class() {
 
       protected $basicService;
+
+      protected $unknown;
 
       public function double() {
         return $this->basicService . $this->basicService;
@@ -139,6 +145,30 @@ class ContainerTest extends TestCase {
 
     $c['basicService'] = 'something';
     $this->assertEquals('somethingsomething', $c['newService']->double());
+  }
+
+  public function testAutowiredAnonymousClassStrict() {
+    $c = new Container();
+    $c['newService'] = $c->autowiredObject(new class() {
+
+      protected $basicService;
+
+      protected $unknown;
+
+      public function double() {
+        return $this->basicService . $this->basicService;
+      }
+
+    });
+
+    $c['basicService'] = 'something';
+    try {
+      $this->assertEquals('somethingsomething', $c['newService']->double());
+      $this->fail('Expected UnknownIdentifierException');
+    }
+    catch (UnknownIdentifierException $e) {
+      // OK
+    }
   }
 
 }

@@ -108,21 +108,44 @@ class Container implements ContainerInterface, \ArrayAccess {
    *   however, services won't be injected until someone requests a copy.
    * - Any properties (which do NOT begin with '_') will be injected.
    *
-   * @param mixed $obj
+   * To specify additional options, use two parameter notation, e.g.
+   *
+   * $c['service'] = $c->autowiredObject(['strict' => FALSE], new class() {
+   *   protected $injectedService;
+   *   public function doStuff() { $this->injectedService->frobnicate(); }
+   * });
+   *
+   * Options:
+   *
+   * - strict (bool): Whether to throw errors for unrecognized properties/services.
+   * - clone (bool): Whether the original service object should be cloned or reused.
+   *
+   * @param mixed $a
+   * @param mixed $b
    * @return \Closure
    */
-  public function autowiredObject($obj) {
-    $c = $this;
-    return function() use ($c, $obj) {
-      $instance = clone $obj;
+  public function autowiredObject($a, $b = NULL) {
+    $options = is_array($a) ? $a : [];
+    $obj = is_array($a) ? $b : $a;
+    $options = array_merge(['strict' => TRUE, 'clone' => TRUE], $options);
+
+    $container = $this;
+    return function() use ($container, $obj, $options) {
+      $instance = $options['clone'] ? (clone $obj) : $obj;
       $className = get_class($obj);
-      $populate = function() use ($c, $className) {
+      $populate = function() use ($container, $className, $options) {
+        $strict = $options['strict'];
         $clazz = new \ReflectionClass($className);
         foreach ($clazz->getProperties() as $prop) {
           $name = $prop->getName();
-          if ($name[0] !== '_') {
-            $this->{$name} = $c->get($name);
+          if ($name[0] === '_') {
+            continue;
           }
+          if (!$strict && !$container->has($name)) {
+            continue;
+          }
+
+          $this->{$name} = $container->get($name);
         }
       };
       $func = $populate->bindTo($instance, $className);
