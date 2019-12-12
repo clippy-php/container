@@ -50,6 +50,31 @@ $c['foo()'] = function($inputtedData, ... , $injectedService, ...)  { ... }
 };
 ```
 
+## Autowired objects / anonymous service classes
+
+The following allows for using injection with improvised service classes.
+
+```php
+$c['basicService'] = 'something';
+$c['newService'] = $c->autowiredObject(new class() {
+
+  protected $basicService;
+
+  public function double() {
+    return $this->basicService . $this->basicService;
+  }
+
+});
+```
+
+Properties (eg `$basicService`) will be pre-populated with the corresponding services.
+
+In the default `strict` mode, unmatched properties will produce exceptions. This can be disabled, e.g.
+
+```php
+$c['newService'] = $c->autowiredObject(['strict' => FALSE], new class() { ..});
+```
+
 ## Sigils
 
 In standard Pimple, you may define alternative handling for a callback by using a wrapper method. Clippy supports
