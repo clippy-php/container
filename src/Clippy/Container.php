@@ -131,27 +131,53 @@ class Container implements ContainerInterface, \ArrayAccess {
 
     $container = $this;
     return function() use ($container, $obj, $options) {
-      $instance = $options['clone'] ? (clone $obj) : $obj;
-      $className = get_class($obj);
-      $populate = function() use ($container, $className, $options) {
-        $strict = $options['strict'];
-        $clazz = new \ReflectionClass($className);
-        foreach ($clazz->getProperties() as $prop) {
-          $name = $prop->getName();
-          if ($name[0] === '_') {
-            continue;
-          }
-          if (!$strict && !$container->has($name)) {
-            continue;
-          }
-
-          $this->{$name} = $container->get($name);
-        }
-      };
-      $func = $populate->bindTo($instance, $className);
-      $func();
-      return $instance;
+      return $this->autowire($obj, $options);
     };
+  }
+
+  /**
+   * Take an existing object and populate its properties with eponymous services.
+   *
+   * $obj = new class() {
+   *   protected $injectedService;
+   *   public function doStuff() { $this->injectedService->frobnicate(); }
+   * };
+   * $c->autowire($obj);
+   *
+   * Any properties (which do NOT begin with '_') will be injected.
+   *
+   * @param mixed $obj
+   *   The object into which we shall inject services.
+   * @param array $options
+   *   - strict (bool): Whether to throw errors for unrecognized properties/services.
+   *   - clone (bool): Whether the original service object should be cloned or reused.
+   * @return mixed
+   */
+  public function autowire($obj, $options) {
+    $options = array_merge(['strict' => TRUE, 'clone' => FALSE], $options);
+
+    $container = $this;
+
+    $instance = $options['clone'] ? (clone $obj) : $obj;
+    $className = get_class($obj);
+    $populate = function() use ($container, $className, $options) {
+      $strict = $options['strict'];
+      $clazz = new \ReflectionClass($className);
+      foreach ($clazz->getProperties() as $prop) {
+        $name = $prop->getName();
+        if ($name[0] === '_') {
+          continue;
+        }
+        if (!$strict && !$container->has($name)) {
+          continue;
+        }
+
+        $this->{$name} = $container->get($name);
+      }
+    };
+    $func = $populate->bindTo($instance, $className);
+    $func();
+    return $instance;
   }
 
   // PSR-11 (++)

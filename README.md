@@ -75,6 +75,15 @@ In the default `strict` mode, unmatched properties will produce exceptions. This
 $c['newService'] = $c->autowiredObject(['strict' => FALSE], new class() { ..});
 ```
 
+Similarly, you may define a regular service function and use autowiring as part of the logic, e.g.
+
+```php
+$c['basicService'] = 'something';
+$c['newService'] = function() use ($c) {
+  return $c->autowire(new MyClass());
+};
+```
+
 ## Sigils
 
 In standard Pimple, you may define alternative handling for a callback by using a wrapper method. Clippy supports

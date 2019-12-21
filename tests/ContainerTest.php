@@ -171,4 +171,26 @@ class ContainerTest extends TestCase {
     }
   }
 
+  /**
+   * @expectException
+   */
+  public function testAutowireAnonymousClassRelaxed() {
+    $c = new Container();
+    $c['basicService'] = 'something';
+
+    $obj = new class() {
+      protected $basicService;
+
+      protected $unknown;
+
+      public function double() {
+        return $this->basicService . $this->basicService;
+      }
+
+    };
+    $c->autowire($obj, ['strict' => FALSE]);
+
+    $this->assertEquals('somethingsomething', $obj->double());
+  }
+
 }
