@@ -197,7 +197,7 @@ class Container implements ContainerInterface, \ArrayAccess {
    * @return bool
    * @see ContainerInterface::get()
    */
-  public function has($id) {
+  public function has(string $id): bool {
     return $this->offsetExists($id);
   }
 
