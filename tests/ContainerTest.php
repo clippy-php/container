@@ -167,6 +167,7 @@ class ContainerTest extends TestCase {
       $this->fail('Expected UnknownIdentifierException');
     }
     catch (UnknownIdentifierException $e) {
+      $this->assertTrue(TRUE);
       // OK
     }
   }
