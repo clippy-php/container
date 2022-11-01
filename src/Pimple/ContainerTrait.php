@@ -77,7 +77,7 @@ trait ContainerTrait
      *
      * @throws FrozenServiceException Prevent override of a frozen service
      */
-    public function offsetSet($id, $value)
+    public function offsetSet($id, $value): void
     {
         if (isset($this->frozen[$id])) {
             throw new FrozenServiceException($id);
@@ -96,6 +96,7 @@ trait ContainerTrait
      *
      * @throws UnknownIdentifierException If the identifier is not defined
      */
+    #[\ReturnTypeWillChange]
     public function offsetGet($id)
     {
         if (!isset($this->keys[$id])) {
@@ -132,7 +133,7 @@ trait ContainerTrait
      *
      * @return bool
      */
-    public function offsetExists($id)
+    public function offsetExists($id): bool
     {
         return isset($this->keys[$id]);
     }
@@ -142,7 +143,7 @@ trait ContainerTrait
      *
      * @param string $id The unique identifier for the parameter or object
      */
-    public function offsetUnset($id)
+    public function offsetUnset($id): void
     {
         if (isset($this->keys[$id])) {
             if (\is_object($this->values[$id])) {
