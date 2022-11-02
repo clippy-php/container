@@ -38,11 +38,12 @@ class Container implements ContainerInterface, \ArrayAccess {
     $this->pimpleConstruct($values);
   }
 
+  #[\ReturnTypeWillChange]
   public function offsetGet($id) {
     return $this->pimpleOffsetGet(rtrim($id, '()+<>'));
   }
 
-  public function offsetSet($id, $value) {
+  public function offsetSet($id, $value): void {
     $len = strlen($id);
 
     if ($len > 2 && $value instanceof \Closure) {
