@@ -182,7 +182,7 @@ trait ContainerTrait
             throw new ExpectedInvokableException('Service definition is not a Closure or invokable object.');
         }
 
-        $this->factories->attach($callable);
+        $this->factories->offsetSet($callable);
 
         return $callable;
     }
@@ -204,7 +204,7 @@ trait ContainerTrait
             throw new ExpectedInvokableException('Callable is not a Closure or invokable object.');
         }
 
-        $this->protected->attach($callable);
+        $this->protected->offsetSet($callable);
 
         return $callable;
     }
@@ -276,8 +276,8 @@ trait ContainerTrait
         };
 
         if (isset($this->factories[$factory])) {
-            $this->factories->detach($factory);
-            $this->factories->attach($extended);
+            $this->factories->offsetUnset($factory);
+            $this->factories->offsetSet($extended);
         }
 
         return $this[$id] = $extended;
